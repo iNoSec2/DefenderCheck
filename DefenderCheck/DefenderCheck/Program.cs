@@ -44,7 +44,8 @@ namespace DefenderCheck
             int originalfilesize = originalfilecontents.Length;
             Console.WriteLine("Target file size: {0} bytes", originalfilecontents.Length);
             Console.WriteLine("Analyzing...\n");
-
+            Scan(targetfile, true);
+            
             byte[] splitarray1 = new byte[originalfilesize/2];
             Buffer.BlockCopy(originalfilecontents, 0, splitarray1, 0, originalfilecontents.Length / 2);
             int lastgood = 0;
@@ -122,7 +123,7 @@ namespace DefenderCheck
             int newsize = (originalarray.Length - splitarraysize) / 2 + splitarraysize;
             if (newsize.Equals(originalarray.Length-1))
             {
-                Console.WriteLine("Exhausted the search. The binary looks good to go!");
+                Console.WriteLine("Exhausted the search. AV was triggered as it did match a signature");
                 Environment.Exit(0);
             }
             byte[] newarray = new byte[newsize];
