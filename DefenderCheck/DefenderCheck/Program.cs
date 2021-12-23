@@ -44,7 +44,12 @@ namespace DefenderCheck
             int originalfilesize = originalfilecontents.Length;
             Console.WriteLine("Target file size: {0} bytes", originalfilecontents.Length);
             Console.WriteLine("Analyzing...\n");
-            Scan(targetfile, true);
+            
+            // Requires full path to pass to MpCmdRun
+            string OriginalTargetFileFP = Path.GetFullPath(targetfile);
+            Console.WriteLine("Analyzing...\n");
+            // Return Reason for analysing
+            Scan(OriginalTargetFileFP, true);
             
             byte[] splitarray1 = new byte[originalfilesize/2];
             Buffer.BlockCopy(originalfilecontents, 0, splitarray1, 0, originalfilecontents.Length / 2);
