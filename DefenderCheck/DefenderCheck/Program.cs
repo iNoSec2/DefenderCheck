@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -24,8 +24,10 @@ namespace DefenderCheck
                 Console.WriteLine("[-] Can't access the target file");
                 return;
             }
-            
+            string OriginalTargetFileFP = Path.GetFullPath(targetfile);
+            targetfile = OriginalTargetFileFP;
             string originalFileDetectionStatus = Scan(targetfile).ToString();
+            Console.WriteLine("OriginalFileDetectionStatus is : {0}", originalFileDetectionStatus);
             if (originalFileDetectionStatus.Equals("NoThreatFound"))
             {
                 if (debug) { Console.WriteLine("Scanning the whole file first"); }
@@ -38,19 +40,13 @@ namespace DefenderCheck
                 Console.WriteLine(@"[-] C:\Temp doesn't exist. Creating it...");
                 Directory.CreateDirectory(@"C:\Temp");
             }
-                   
             string testfilepath = @"C:\Temp\testfile.exe";
             byte[] originalfilecontents = File.ReadAllBytes(targetfile);
             int originalfilesize = originalfilecontents.Length;
             Console.WriteLine("Target file size: {0} bytes", originalfilecontents.Length);
+            //Console.WriteLine("Full file path is {0}",fullfp);
             Console.WriteLine("Analyzing...\n");
-            
-            // Requires full path to pass to MpCmdRun
-            string OriginalTargetFileFP = Path.GetFullPath(targetfile);
-            Console.WriteLine("Analyzing...\n");
-            // Return Reason for analysing
-            Scan(OriginalTargetFileFP, true);
-            
+            Scan(targetfile, true);
             byte[] splitarray1 = new byte[originalfilesize/2];
             Buffer.BlockCopy(originalfilecontents, 0, splitarray1, 0, originalfilecontents.Length / 2);
             int lastgood = 0;
@@ -128,7 +124,7 @@ namespace DefenderCheck
             int newsize = (originalarray.Length - splitarraysize) / 2 + splitarraysize;
             if (newsize.Equals(originalarray.Length-1))
             {
-                Console.WriteLine("Exhausted the search. AV was triggered as it did match a signature");
+                Console.WriteLine("Exhausted the search. The binary did trigger the AV but no strings were detected.");
                 Environment.Exit(0);
             }
             byte[] newarray = new byte[newsize];
@@ -171,7 +167,11 @@ namespace DefenderCheck
                 string sigName;
                 while ((stdout = process.StandardOutput.ReadLine()) != null)
                 {
+                    //string test = stdout;
+                    //Console.WriteLine(test);
                     if (stdout.Contains("Threat  "))
+                    
+
                     {
                         string[] sig = stdout.Split(' ');
                         sigName = sig[19]; // Lazy way to get the signature name from MpCmdRun
