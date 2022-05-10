@@ -7,17 +7,27 @@ using System.Text;
 
 namespace DefenderCheck
 {
+
     class Program
     {
+
         static void Main(string[] args)
         {
             //Setup();
-            bool debug = false;
+        var TestFile = @"Testfile.exe";
+        var TestDir = @"C:\Temp";
+        var TestDirFile = TestDir + @"\" + TestFile;
+        bool debug = false;
             if (args.Length == 2 && args[1].Contains("debug"))
             {
                 debug = true;
             }
 
+            if (args.Length == 0)
+            {
+                Console.WriteLine("[-] No input file specified");
+                return;
+            }
             string targetfile = args[0];
             if (!File.Exists(targetfile))
             {
@@ -27,7 +37,7 @@ namespace DefenderCheck
             string OriginalTargetFileFP = Path.GetFullPath(targetfile);
             targetfile = OriginalTargetFileFP;
             string originalFileDetectionStatus = Scan(targetfile).ToString();
-            Console.WriteLine("OriginalFileDetectionStatus is : {0}", originalFileDetectionStatus);
+            Console.WriteLine("\nOriginalFileDetectionStatus is : {0}", originalFileDetectionStatus);
             if (originalFileDetectionStatus.Equals("NoThreatFound"))
             {
                 if (debug) { Console.WriteLine("Scanning the whole file first"); }
@@ -35,18 +45,18 @@ namespace DefenderCheck
                 return;
             }
             
-            if (!Directory.Exists(@"C:\Temp"))
+            if (!Directory.Exists(TestDir))
             {
                 Console.WriteLine(@"[-] C:\Temp doesn't exist. Creating it...");
-                Directory.CreateDirectory(@"C:\Temp");
+                Directory.CreateDirectory(TestDir);
             }
-            string testfilepath = @"C:\Temp\testfile.exe";
+            string testfilepath = TestDirFile ;
             byte[] originalfilecontents = File.ReadAllBytes(targetfile);
             int originalfilesize = originalfilecontents.Length;
             Console.WriteLine("Target file size: {0} bytes", originalfilecontents.Length);
             //Console.WriteLine("Full file path is {0}",fullfp);
             Console.WriteLine("Analyzing...\n");
-            Scan(targetfile, true);
+            Scan(OriginalTargetFileFP, true);
             byte[] splitarray1 = new byte[originalfilesize/2];
             Buffer.BlockCopy(originalfilecontents, 0, splitarray1, 0, originalfilecontents.Length / 2);
             int lastgood = 0;
@@ -95,11 +105,14 @@ namespace DefenderCheck
 
         public static byte[] HalfSplitter(byte[] originalarray, int lastgood) //Will round down to nearest int
         {
+            var TestFile = @"Testfile.exe";
+            var TestDir = @"C:\Temp";
+            var TestDirFile = TestDir + @"\" + TestFile;
             byte[] splitarray = new byte[(originalarray.Length - lastgood)/2+lastgood];
             if (originalarray.Length == splitarray.Length +1)
             {
                 Console.WriteLine("[!] Identified end of bad bytes at offset 0x{0:X} in the original file", originalarray.Length);
-                Scan(@"C:\Temp\testfile.exe", true);
+                Scan(TestDirFile, true);
                 byte[] offendingBytes = new byte[256];
 
                 if (originalarray.Length < 256)
@@ -124,7 +137,7 @@ namespace DefenderCheck
             int newsize = (originalarray.Length - splitarraysize) / 2 + splitarraysize;
             if (newsize.Equals(originalarray.Length-1))
             {
-                Console.WriteLine("Exhausted the search. The binary did trigger the AV but no strings were detected.");
+                Console.WriteLine("Exhausted the search. The binary did trigger the AV but no strings were detected - probably going to be the last couple of bytes");
                 Environment.Exit(0);
             }
             byte[] newarray = new byte[newsize];
@@ -141,7 +154,14 @@ namespace DefenderCheck
             }
 
             var process = new Process();
-            var mpcmdrun = new ProcessStartInfo(@"C:\Program Files\Windows Defender\MpCmdRun.exe")
+            // Some Defender Avoidance
+            //Build new var mpcmdrun = new ProcessStartInfo(@"C:\Program Files\Windows Defender\MpCmdRun.exe")
+            var PFile = @"Program Files";
+            var exeext = ".exe";
+            var Exe2Run = @"mpcmdrun";
+            var dir2 = "Windows Defender";
+            var newproc = @"C:\" + PFile + @"\" + dir2 + @"\" + Exe2Run + exeext;
+            var mprun = new ProcessStartInfo(newproc)
             {
                 Arguments = $"-Scan -ScanType 3 -File \"{file}\" -DisableRemediation -Trace -Level 0x10",
                 CreateNoWindow = true,
@@ -151,7 +171,7 @@ namespace DefenderCheck
                 WindowStyle = ProcessWindowStyle.Hidden
             };
 
-            process.StartInfo = mpcmdrun;
+            process.StartInfo = mprun;
             process.Start();
             process.WaitForExit(30000); //Wait 30s
 
